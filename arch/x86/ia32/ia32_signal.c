@@ -34,6 +34,7 @@
 #include <asm/sigframe.h>
 #include <asm/sighandling.h>
 #include <asm/smap.h>
+#include <asm/cet.h>
 
 /*
  * Do a signal return; undo the signal stack.
@@ -74,6 +75,7 @@ static int ia32_restore_sigcontext(struct pt_regs *regs,
 	unsigned int tmpflags, err = 0;
 	void __user *buf;
 	u32 tmp;
+	u32 ssp;
 
 	/* Always make any pending restarted system calls return -EINTR */
 	current->restart_block.fn = do_no_restart_syscall;
@@ -104,9 +106,11 @@ static int ia32_restore_sigcontext(struct pt_regs *regs,
 
 		get_user_ex(tmp, &sc->fpstate);
 		buf = compat_ptr(tmp);
+		get_user_ex(ssp, &sc->ssp);
 	} get_user_catch(err);
 
 	err |= fpu__restore_sig(buf, 1);
+	err |= cet_restore_signal((unsigned long)ssp);
 
 	force_iret();
 
@@ -194,6 +198,7 @@ static int ia32_setup_sigcontext(struct sigcontext_32 __user *sc,
 		put_user_ex(current->thread.trap_nr, &sc->trapno);
 		put_user_ex(current->thread.error_code, &sc->err);
 		put_user_ex(regs->ip, &sc->ip);
+		put_user_ex((u32)cet_get_shstk_ptr(), &sc->ssp);
 		put_user_ex(regs->cs, (unsigned int __user *)&sc->cs);
 		put_user_ex(regs->flags, &sc->flags);
 		put_user_ex(regs->sp, &sc->sp_at_signal);

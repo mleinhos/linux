@@ -46,6 +46,7 @@
 
 #include <asm/sigframe.h>
 #include <asm/signal.h>
+#include <asm/cet.h>
 
 #define COPY(x)			do {			\
 	get_user_ex(regs->x, &sc->x);			\
@@ -102,6 +103,7 @@ static int restore_sigcontext(struct pt_regs *regs,
 	void __user *buf;
 	unsigned int tmpflags;
 	unsigned int err = 0;
+	unsigned long ssp = 0;
 
 	/* Always make any pending restarted system calls return -EINTR */
 	current->restart_block.fn = do_no_restart_syscall;
@@ -148,9 +150,11 @@ static int restore_sigcontext(struct pt_regs *regs,
 
 		get_user_ex(buf_val, &sc->fpstate);
 		buf = (void __user *)buf_val;
+		get_user_ex(ssp, &sc->ssp);
 	} get_user_catch(err);
 
 	err |= fpu__restore_sig(buf, IS_ENABLED(CONFIG_X86_32));
+	err |= cet_restore_signal(ssp);
 
 	force_iret();
 
@@ -193,6 +197,7 @@ int setup_sigcontext(struct sigcontext __user *sc, void __user *fpstate,
 		put_user_ex(current->thread.trap_nr, &sc->trapno);
 		put_user_ex(current->thread.error_code, &sc->err);
 		put_user_ex(regs->ip, &sc->ip);
+		put_user_ex(cet_get_shstk_ptr(), &sc->ssp);
 #ifdef CONFIG_X86_32
 		put_user_ex(regs->cs, (unsigned int __user *)&sc->cs);
 		put_user_ex(regs->flags, &sc->flags);
@@ -748,6 +753,12 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
 		user_disable_single_step(current);
 
 	failed = (setup_rt_frame(ksig, regs) < 0);
+	if (!failed) {
+		unsigned long rstor = (unsigned long)ksig->ka.sa.sa_restorer;
+		int ia32 = is_ia32_frame(ksig);
+
+		failed = cet_setup_signal(ia32, rstor);
+	}
 	if (!failed) {
 		/*
 		 * Clear the direction flag as per the ABI for function entry.

@@ -683,7 +683,13 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
 #if VM_PKEY_BIT4
 		[ilog2(VM_PKEY_BIT4)]	= "",
 #endif
+<<<<<<< ours
 #endif /* CONFIG_ARCH_HAS_PKEYS */
+=======
+#ifdef CONFIG_X86_INTEL_SHADOW_STACK_USER
+		[ilog2(VM_SHSTK)]	= "ss"
+#endif
+>>>>>>> theirs
 	};
 	size_t i;
 

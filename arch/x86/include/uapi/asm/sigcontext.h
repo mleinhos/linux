@@ -230,6 +230,7 @@ struct sigcontext_32 {
 	__u32				fpstate; /* Zero when no FPU/extended context */
 	__u32				oldmask;
 	__u32				cr2;
+	__u32				ssp;
 };
 
 /*
@@ -262,6 +263,7 @@ struct sigcontext_64 {
 	__u64				trapno;
 	__u64				oldmask;
 	__u64				cr2;
+	__u64				ssp;
 
 	/*
 	 * fpstate is really (struct _fpstate *) or (struct _xstate *)
@@ -320,6 +322,7 @@ struct sigcontext {
 	struct _fpstate __user		*fpstate;
 	__u32				oldmask;
 	__u32				cr2;
+	__u32				ssp;
 };
 # else /* __x86_64__: */
 struct sigcontext {
@@ -377,6 +380,7 @@ struct sigcontext {
 	__u64				trapno;
 	__u64				oldmask;
 	__u64				cr2;
+	__u64				ssp;
 	struct _fpstate __user		*fpstate;	/* Zero when no FPU context */
 #  ifdef __ILP32__
 	__u32				__fpstate_pad;
