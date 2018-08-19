@@ -17,9 +17,9 @@ struct cet_stat {
 
 #ifdef CONFIG_X86_INTEL_CET
 unsigned long cet_get_shstk_ptr(void);
-<<<<<<< ours
 int cet_push_shstk(int ia32, unsigned long ssp, unsigned long val);
 int cet_setup_shstk(void);
+int cet_setup_thread_shstk(struct task_struct *p);
 void cet_disable_shstk(void);
 void cet_disable_free_shstk(struct task_struct *p);
 int cet_restore_signal(unsigned long ssp);
@@ -29,11 +29,11 @@ static inline unsigned long cet_get_shstk_ptr(void) { return 0; }
 static inline int cet_push_shstk(int ia32, unsigned long ssp,
 				 unsigned long val) { return 0; }
 static inline int cet_setup_shstk(void) { return 0; }
+static inline int cet_setup_thread_shstk(struct task_struct *p) { return 0; }
 static inline void cet_disable_shstk(void) {}
 static inline void cet_disable_free_shstk(struct task_struct *p) {}
 static inline int cet_restore_signal(unsigned long ssp) { return 0; }
 static inline int cet_setup_signal(int ia32, unsigned long addr) { return 0; }
-=======
 int cet_setup_shstk(void);
 void cet_disable_shstk(void);
 void cet_disable_free_shstk(struct task_struct *p);
@@ -42,7 +42,6 @@ static inline unsigned long cet_get_shstk_ptr(void) { return 0; }
 static inline int cet_setup_shstk(void) { return 0; }
 static inline void cet_disable_shstk(void) {}
 static inline void cet_disable_free_shstk(struct task_struct *p) {}
->>>>>>> theirs
 #endif
 
 #endif /* __ASSEMBLY__ */

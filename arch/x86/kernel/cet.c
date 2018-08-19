@@ -17,10 +17,7 @@
 #include <asm/fpu/xstate.h>
 #include <asm/fpu/types.h>
 #include <asm/cet.h>
-<<<<<<< ours
 #include <asm/special_insns.h>
-=======
->>>>>>> theirs
 
 #define SHSTK_SIZE (0x8000 * (test_thread_flag(TIF_IA32) ? 4 : 8))
 
@@ -51,7 +48,6 @@ unsigned long cet_get_shstk_ptr(void)
 	return ptr;
 }
 
-<<<<<<< ours
 int cet_push_shstk(int ia32, unsigned long ssp, unsigned long val)
 {
 	if (val >= TASK_SIZE)
@@ -70,8 +66,6 @@ int cet_push_shstk(int ia32, unsigned long ssp, unsigned long val)
 	}
 }
 
-=======
->>>>>>> theirs
 static unsigned long shstk_mmap(unsigned long addr, unsigned long len)
 {
 	struct mm_struct *mm = current->mm;
@@ -106,6 +100,40 @@ int cet_setup_shstk(void)
 	current->thread.cet.shstk_base = addr;
 	current->thread.cet.shstk_size = size;
 	current->thread.cet.shstk_enabled = 1;
+	return 0;
+}
+
+int cet_setup_thread_shstk(struct task_struct *tsk)
+{
+	unsigned long addr, size;
+	struct cet_user_state *state;
+
+	if (!current->thread.cet.shstk_enabled)
+		return 0;
+
+	state = get_xsave_addr(&tsk->thread.fpu.state.xsave,
+			       XFEATURE_MASK_SHSTK_USER);
+
+	if (!state)
+		return -EINVAL;
+
+	size = tsk->thread.cet.shstk_size;
+	if (size == 0)
+		size = SHSTK_SIZE;
+
+	addr = shstk_mmap(0, size);
+
+	if (addr >= TASK_SIZE) {
+		tsk->thread.cet.shstk_base = 0;
+		tsk->thread.cet.shstk_size = 0;
+		tsk->thread.cet.shstk_enabled = 0;
+		return -ENOMEM;
+	}
+
+	state->user_ssp = (u64)(addr + size - sizeof(u64));
+	tsk->thread.cet.shstk_base = addr;
+	tsk->thread.cet.shstk_size = size;
+	tsk->thread.cet.shstk_enabled = 1;
 	return 0;
 }
 
@@ -146,7 +174,6 @@ void cet_disable_free_shstk(struct task_struct *tsk)
 
 	tsk->thread.cet.shstk_enabled = 0;
 }
-<<<<<<< ours
 
 int cet_restore_signal(unsigned long ssp)
 {
@@ -179,5 +206,3 @@ int cet_setup_signal(int ia32, unsigned long rstor_addr)
 
 	return cet_push_shstk(ia32, ssp, rstor_addr);
 }
-=======
->>>>>>> theirs

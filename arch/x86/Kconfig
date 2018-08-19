@@ -1923,12 +1923,16 @@ config X86_INTEL_CET
 config ARCH_HAS_SHSTK
 	def_bool n
 
+config ARCH_HAS_PROGRAM_PROPERTIES
+	def_bool n
+
 config X86_INTEL_SHADOW_STACK_USER
 	prompt "Intel Shadow Stack for user-mode"
 	def_bool n
 	depends on CPU_SUP_INTEL && X86_64
 	select X86_INTEL_CET
 	select ARCH_HAS_SHSTK
+	select ARCH_HAS_PROGRAM_PROPERTIES
 	---help---
 	  Shadow stack provides hardware protection against program stack
 	  corruption.  Only when all the following are true will an application
@@ -1941,7 +1945,6 @@ config X86_INTEL_SHADOW_STACK_USER
 
 	  If unsure, say y.
 
-<<<<<<< ours
 config X86_INTEL_BRANCH_TRACKING_USER
 	prompt "Intel Indirect Branch Tracking for user-mode"
 	def_bool n
@@ -1954,8 +1957,6 @@ config X86_INTEL_BRANCH_TRACKING_USER
 
 	  If unsure, say y
 
-=======
->>>>>>> theirs
 config EFI
 	bool "EFI runtime service support"
 	depends on ACPI
