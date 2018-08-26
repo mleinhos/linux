@@ -83,6 +83,19 @@ static unsigned long shstk_mmap(unsigned long addr, unsigned long len)
 	return addr;
 }
 
+int cet_alloc_shstk(unsigned long *arg)
+{
+	unsigned long size = *arg;
+	unsigned long addr;
+
+	addr = shstk_mmap(0, size);
+	if (addr >= TASK_SIZE)
+		return -ENOMEM;
+
+	*arg = addr;
+	return 0;
+}
+
 int cet_setup_shstk(void)
 {
 	unsigned long addr, size;
@@ -90,7 +103,10 @@ int cet_setup_shstk(void)
 	if (!cpu_feature_enabled(X86_FEATURE_SHSTK))
 		return -EOPNOTSUPP;
 
-	size = SHSTK_SIZE;
+	size = current->thread.cet.exec_shstk_size;
+	if ((size > TASK_SIZE) || (size == 0))
+		size = SHSTK_SIZE;
+
 	addr = shstk_mmap(0, size);
 
 	if (addr >= TASK_SIZE)
@@ -100,6 +116,40 @@ int cet_setup_shstk(void)
 	current->thread.cet.shstk_base = addr;
 	current->thread.cet.shstk_size = size;
 	current->thread.cet.shstk_enabled = 1;
+	return 0;
+}
+
+int cet_setup_thread_shstk(struct task_struct *tsk)
+{
+	unsigned long addr, size;
+	struct cet_user_state *state;
+
+	if (!current->thread.cet.shstk_enabled)
+		return 0;
+
+	state = get_xsave_addr(&tsk->thread.fpu.state.xsave,
+			       XFEATURE_MASK_SHSTK_USER);
+
+	if (!state)
+		return -EINVAL;
+
+	size = tsk->thread.cet.shstk_size;
+	if (size == 0)
+		size = SHSTK_SIZE;
+
+	addr = shstk_mmap(0, size);
+
+	if (addr >= TASK_SIZE) {
+		tsk->thread.cet.shstk_base = 0;
+		tsk->thread.cet.shstk_size = 0;
+		tsk->thread.cet.shstk_enabled = 0;
+		return -ENOMEM;
+	}
+
+	state->user_ssp = (u64)(addr + size - sizeof(u64));
+	tsk->thread.cet.shstk_base = addr;
+	tsk->thread.cet.shstk_size = size;
+	tsk->thread.cet.shstk_enabled = 1;
 	return 0;
 }
 
